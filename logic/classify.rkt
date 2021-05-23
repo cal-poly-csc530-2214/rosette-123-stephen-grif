@@ -1,4 +1,5 @@
 #lang rosette
+(require rackunit)
 
 (provide (all-defined-out))
 
@@ -6,8 +7,18 @@
 ; * 'TAUTOLOGY if every interpretation I satisfies F;
 ; * 'CONTRADICTION if no interpretation I satisfies F;
 ; * 'CONTINGENCY if there are two interpretations I and I′ such that I satisfies F and I' does not.
+
 (define (classify F)
-  (error 'classify "not implemented yet!"))
+  (begin
+    (define reg (eval F))
+    (define inv (eval (! F)))
+    (if (&& reg inv) 'CONTINGENCY
+        (if (&& reg (not inv)) 'TAUTOLOGY 'CONTRADICTION))))
+
+(define (eval F)
+  (begin
+    (clear-vc!)
+    (not (eq? (solve (assert F)) (unsat)))))
 
 (define-symbolic* p q r boolean?)
 
@@ -20,3 +31,12 @@
 ; (p ↔ q) ∧ (q → r) ∧ ¬(¬r → ¬p)
 (define f2 (&& (<=> p q) (=> q r) (! (=> (! r) (! q)))))
 
+(define f3 (&& p (! p)))
+
+(define f4 (|| p (! p)))
+
+(check-equal? (classify f0) 'CONTINGENCY)
+(check-equal? (classify f1) 'TAUTOLOGY)
+(check-equal? (classify f2) 'CONTRADICTION)
+(check-equal? (classify f3) 'CONTRADICTION)
+(check-equal? (classify f4) 'TAUTOLOGY)
